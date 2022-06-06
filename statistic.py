@@ -1,6 +1,10 @@
 import os
 from helperClasses import Read
-from scipy.spatial import distance
+
+"""
+This class served to analyze the results of the clustering error correction
+approach. 
+"""
 
 class Statistics:
 
@@ -11,14 +15,19 @@ class Statistics:
         self.correctTable = []
         self.filteredPosition = []
 
+    """
+    This method generated the readTable which contains all the raw reads
+    """
     def createReadTable(self):
-        file = open('Documents\\5V_allPairs.txt', 'r')
+        file = open('Archive\\5V_allPairs.txt', 'r')
         lines = file.readlines()
         file.close()
 
         rawTable = []
         count = 0
         print("Reading all reads from csv file")
+        # Reads the reads from the file. Important: File needs the same structure are mentioned in
+        # file format (Documents)
         for line in lines:
             parts = line.split(' ')
             read = Read(count, parts[7], int(parts[3]))
@@ -35,7 +44,7 @@ class Statistics:
         for read in rawTable:
             if read.startPos == currentPos:
                 duplicate = False
-                for i in range(readTablePos - sameStartPos, readTablePos):
+                for i in range(readTablePos - sameStartPos, readTablePos-1):
                     if self.readTable[i].read == read.read:
                         self.readTable[i].count += 1
                         duplicate = True
@@ -51,8 +60,13 @@ class Statistics:
                 read.id = readTablePos
                 self.readTable.append(read)
                 readTablePos = readTablePos + 1
+        print(len(self.readTable))
 
 
+    """
+    It opens the file containing the reads which were corrected with shannon entropy.
+    These reads are stored in entropyTable.
+    """
     def createEntropyTable(self):
         print("Creating Entropy Table")
         file = open('Documents/EntropyFile.txt', 'r')
@@ -63,8 +77,8 @@ class Statistics:
         for line in lines:
             parts = line.split(' ')
             if len(parts) > 2:
-                parts[1] = parts[1].replace(" ", "")
-                parts[1] = parts[1].replace("\n", "")
+                parts[2] = parts[2].replace(" ", "")
+                parts[2] = parts[2].replace("\n", "")
                 #read = Read(count, parts[2], int(parts[0]), int(parts[1]), parts[3])
                 read = Read(count, parts[2], int(parts[0]), int(parts[1]))
                 self.entropyTable.append(read)
@@ -72,7 +86,12 @@ class Statistics:
 
         for read in self.entropyTable:
             self.correctTable.append([read, [], ""])
+        print(len(self.entropyTable))
 
+    """
+    This method opens file containing the positions relevant in compact form.
+    They are stored in filteredPosition
+    """
     def createFilteredPositionList(self):
         file = open('Documents\\filteredPositions.txt', 'r')
         line = file.readlines()
@@ -81,31 +100,43 @@ class Statistics:
         for i in range(0, len(numbers)):
             self.filteredPosition.append(int(numbers[i]))
 
+    """
+    Examines what the length of the shortest read is
+    """
     def shortestLengtOfFilteredRead(self):
-        length = 100
+        length = 10000
         for i in range(0, len(self.entropyTable)):
             if len(self.entropyTable[i].filteredRead) < length:
                 length = len(self.entropyTable[i].filteredRead)
         print(length)
 
+    """
+    This class can compute the clusteringTable. The clusteringTable contains sequences of the
+    reads after they have been corrected with the help of the clustering approach. To make it work,
+    all files of the lates iteration created during correction needs to be stored in the directory Iteration.
+    Then, the algorithm computes a file called ClusteringFile which contains the corrected reads.
+    @creationMode 0 if ClusteringFile needs to be created. 1 otherwise
+    """
     def createClusteringTable(self, creationMode):
-
+        print("Creating Clustering Table")
         if creationMode == 0:
-            print("Creating Clustering Table")
-            for file in os.listdir("Data"):
+            for file in os.listdir("Iteration"):
                 if file.startswith("ClusteringFile"):
-                    f = open("Data\\" + file, 'r')
+                    f = open("Iteration\\" + file, 'r')
                     lines = f.readlines()
                     f.close()
                     count = 0
                     for line in lines:
                         parts = line.split(' ')
                         if len(parts[2]) > 1:
+                            parts[2] = parts[2].replace(" ", "")
+                            parts[2] = parts[2].replace("\n", "")
                             self.correctTable[count][1].append(parts[2])
                         count += 1
 
             print("Collected all files")
             pos = 0
+            # Apply majority rule to correct reads
             for elem in self.correctTable:
                 for i in range(0, len(elem[0].read)):
                     if elem[0].read[i] != ".":
@@ -136,11 +167,12 @@ class Statistics:
                         else:
                             elem[2] += elem[0].read[i]
                     else:
+                        # If read contains at position a dot, don't correct.
                         elem[2] += "."
                 pos += 1
             print("Corrected reads")
 
-
+            # Store it in file
             file = open('Documents\\ClusteringFile.txt', 'w')
 
             for i in range(0, len(self.correctTable)):
@@ -149,6 +181,7 @@ class Statistics:
                         2] + "\n")
             file.close()
 
+        # Store the reads in clusteringTable
         file = open('Documents\\ClusteringFile.txt', 'r')
         lines = file.readlines()
         file.close()
@@ -164,7 +197,9 @@ class Statistics:
             self.clusteringTable.append(read)
             count = count + 1
 
-
+    """
+    This method examines whether reads have a least distance to another haplotype after error correction
+    """
     def testEnd(self, haplotypes):
 
         print("Applying similarity test")
@@ -216,10 +251,17 @@ class Statistics:
         #print(clusteringDistribution)
         print(arrow)
 
+    """
+    This method computes a statistics showing how many reads have 0 distance to groundtruth, 1, 2 etc
+    @haplotype list of haplotypes
+    @mode 1 for readTable, 2 for entropyTable, 3 for clusteringTable
+    """
     def getStatistics(self, haplotypes, mode):
         array = []
+        print("Calculating statistics")
         for i in range(0, 100):
             array.append([0, 0, 0, 0, 0])
+        list = []
         if mode == 1:
             for i in range(0, len(self.readTable)):
                 if 790 <= self.readTable[i].startPos and self.readTable[i].startPos + len(
@@ -230,13 +272,17 @@ class Statistics:
                     minValue, index = self.leastValue(distance)
                     if minValue < 100:
                         array[minValue][index] += 1
+                    if minValue == 0 and index == 3:
+                        list.append(i)
+            print(list)
         elif mode == 2:
+            count = 0
+            zeroCount = 0
             for i in range(0, len(self.entropyTable)):
                 if 790 <= self.entropyTable[i].startPos and self.entropyTable[i].startPos + len(
                         self.entropyTable[i].read) <= 5096:
                     distance = [0, 0, 0, 0, 0]
                     for t in range(0, len(haplotypes)):
-
                         distance[t] = self.similarity(self.entropyTable[i], haplotypes[t], self.entropyTable[i].read)
                     minValue, index = self.leastValue(distance)
                     if minValue < 100:
@@ -256,6 +302,12 @@ class Statistics:
             print(count)
         print(array)
 
+    """
+    prints number of matching and mismatching reads covering each position for clusteringTable
+    @haplotypes list of haplotypes
+    @matchMode 0 if all a read has not a mistake at position, it is counted as match, 1 if a read can only be seen as match 
+    if read has 0 as hamming distance 
+    """
     def getMismatchDistributionOfClusteringTable(self, haplotypes, matchMode, printMode):
         misMatches = []
         matches = []
@@ -269,7 +321,6 @@ class Statistics:
 
         for i in range(0, len(self.clusteringTable)):
             distances = []
-
             distances.append(self.similarity(self.clusteringTable[i], haplotypes[0], self.clusteringTable[i].read))
             distances.append(self.similarity(self.clusteringTable[i], haplotypes[1], self.clusteringTable[i].read))
             distances.append(self.similarity(self.clusteringTable[i], haplotypes[2], self.clusteringTable[i].read))
@@ -294,6 +345,8 @@ class Statistics:
                                 matches[self.clusteringTable[i].startPos + k - 1][index] += 1
                     if self.clusteringTable[i].read[k] != haplotypes[index][self.clusteringTable[i].startPos + k - 1]:
                         if self.clusteringTable[i].read[k] != ".":
+                            if 5080 <= k + self.clusteringTable[i].startPos - 1 <= 5090:
+                                print(i, distances)
                             misMatches[self.clusteringTable[i].startPos + k - 1][index] += 1
                 else:
                     break
@@ -311,7 +364,12 @@ class Statistics:
                             misMatches[i][4] > 200:
                         print(i + 1, " ", misMatches[i], " ", matches[i])
 
-
+    """
+        prints number of matching and mismatching reads covering each position for readTable
+        @haplotypes list of haplotypes
+        @matchMode 0 if all a read has not a mistake at position, it is counted as match, 1 if a read can only be seen as match 
+        if read has 0 as hamming distance 
+        """
     def getMismatchDistributionOfReadTable(self, haplotypes):
         misMatches = []
         matches = []
@@ -320,36 +378,42 @@ class Statistics:
             misMatches.append([0, 0, 0, 0, 0])
             matches.append([0, 0, 0, 0, 0])
 
-        for i in range(0, len(self.readTable)):
+        for i in range(0, len(self.entropyTable)):
             distances = []
 
-            distances.append(self.similarity(self.readTable[i], haplotypes[0], self.readTable[i].read))
-            distances.append(self.similarity(self.readTable[i], haplotypes[1], self.readTable[i].read))
-            distances.append(self.similarity(self.readTable[i], haplotypes[2], self.readTable[i].read))
-            distances.append(self.similarity(self.readTable[i], haplotypes[3], self.readTable[i].read))
-            distances.append(self.similarity(self.readTable[i], haplotypes[4], self.readTable[i].read))
+            distances.append(self.similarity(self.entropyTable[i], haplotypes[0], self.entropyTable[i].read))
+            distances.append(self.similarity(self.entropyTable[i], haplotypes[1], self.entropyTable[i].read))
+            distances.append(self.similarity(self.entropyTable[i], haplotypes[2], self.entropyTable[i].read))
+            distances.append(self.similarity(self.entropyTable[i], haplotypes[3], self.entropyTable[i].read))
+            distances.append(self.similarity(self.entropyTable[i], haplotypes[4], self.entropyTable[i].read))
             minValue = 10000
             index = -1
             for k in range(0, 5):
                 if distances[k] < minValue:
                     minValue = distances[k]
                     index = k
-            if self.readTable[i].startPos > len(haplotypes[index]):
+            if self.entropyTable[i].startPos > len(haplotypes[index]):
                 return None
             check = False
-            for k in range(0, len(self.readTable[i].read)):
-                if self.readTable[i].startPos + k < len(haplotypes[index]):
-                    if self.readTable[i].read[k] == haplotypes[index][self.readTable[i].startPos + k - 1]:
-                        matches[self.readTable[i].startPos + k - 1][index] += 1
-                    if self.readTable[i].read[k] != haplotypes[index][self.readTable[i].startPos + k - 1]:
-                        if self.readTable[i].read[k] != ".":
-                            misMatches[self.readTable[i].startPos + k - 1][index] += 1
+            for k in range(0, len(self.entropyTable[i].read)):
+                if self.entropyTable[i].startPos + k < len(haplotypes[index]):
+                    if self.entropyTable[i].read[k] == haplotypes[index][self.entropyTable[i].startPos + k - 1]:
+                        matches[self.entropyTable[i].startPos + k - 1][index] += 1
+                    if self.entropyTable[i].read[k] != haplotypes[index][self.entropyTable[i].startPos + k - 1]:
+                        if self.entropyTable[i].read[k] != ".":
+                            misMatches[self.entropyTable[i].startPos + k - 1][index] += 1
                 else:
                     break
         for i in range(0, len(misMatches)):
             if misMatches[i] != [0, 0, 0, 0, 0]:
                 print(i + 1, " ", misMatches[i], " ", matches[i])
 
+    """
+    computes hamming distance
+    @read object of read
+    @haplotype haplotype
+    @corRead read which should be compared with haplotype
+    """
     def similarity(self, read, haplotype, corRead):
         if read.startPos > len(haplotype):
             return None
@@ -363,6 +427,10 @@ class Statistics:
                 break
         return distance
 
+    """
+    computes smallest value in a list
+    @list list
+    """
     def leastValue(self, list):
         minValue = list[0]
         index = 0
@@ -374,11 +442,15 @@ class Statistics:
                 index = i
         return minValue, index
 
+    """
+    computes diversity level of a given set of genomes
+    @list contains haplotypes
+    """
     def diversityLevel(self, list):
         diversity = 0
         count = 0
         for i in range(0, len(list)):
-            for j in range(0, len(list)):
+            for j in range(i+1, len(list)):
                 if i != j:
                     for k in range(0, len(list[i])):
                         if list[i][k] != list[j][k]:
@@ -390,6 +462,50 @@ class Statistics:
         diversity = diversity / count
         print("Diversity level: ", (diversity / len(list[0])))
 
+    """
+    computes number of correct read for certain lengths
+    @haplotypes list of haplotypes
+    """
+    def DependencyOfLengthOnCorrection(self, haplotypes):
+        count = 0
+        array = []
+        for i in range(0, 6):
+            array.append([0, 0])
+        for i in range(0, len(self.clusteringTable)):
+            if 790 <= self.clusteringTable[i].startPos and self.clusteringTable[i].startPos + len(
+                    self.clusteringTable[i].read) <= 5096:
+                count += self.clusteringTable[i].count
+                distance = [0, 0, 0, 0, 0]
+                for t in range(0, len(haplotypes)):
+                    distance[t] = self.similarity(self.clusteringTable[i], haplotypes[t], self.clusteringTable[i].read)
+                minValue, index = self.leastValue(distance)
+                pos = 0
+                if minValue > 0:
+                    pos = 1
+                if len(self.clusteringTable[i].read) < 400:
+                    array[0][pos] += self.clusteringTable[i].count
+                elif len(self.clusteringTable[i].read) < 500:
+                    array[1][pos] += self.clusteringTable[i].count
+                elif len(self.clusteringTable[i].read) < 600:
+                    array[2][pos] += self.clusteringTable[i].count
+                elif len(self.clusteringTable[i].read) < 700:
+                    array[3][pos] += self.clusteringTable[i].count
+                elif len(self.clusteringTable[i].read) < 800:
+                    array[4][pos] += self.clusteringTable[i].count
+                else:
+                    array[5][pos] += self.clusteringTable[i].count
+        print("Length < 400: ", array[0])
+        print("Length < 500: ", array[1])
+        print("Length < 600: ", array[2])
+        print("Length < 700: ", array[3])
+        print("Length < 800: ", array[4])
+        print("Length > 800: ", array[5])
+
+    """
+    prints the haplotypes
+    @haplotypes list of haplotypes
+    @mode 0 in compact form after entropyErrorCorrection, 1 in compact form after clusteringErrorCorrection
+    """
     def printHaplotypes(self, haplotypes, mode):
         hap1F = ""
         hap2F = ""
@@ -407,7 +523,7 @@ class Statistics:
             for i in range(0, len(numbers)):
                 filteredPosition.append(int(numbers[i]))
 
-            for i in range(3000, 3400):
+            for i in range(790, 5096):
                 if i in filteredPosition:
                     hap1F += haplotypes[0][i]
                     hap2F += haplotypes[1][i]
@@ -439,6 +555,9 @@ class Statistics:
         print(hap4F)
         print(hap5F)
 
+"""
+This method reads from a file the sequences of the 5 virus strains
+"""
 def getHaplotypes():
     file = open('Documents\\5VirusMixReference.fasta', 'r')
     lines = file.readlines()
@@ -479,6 +598,7 @@ def getHaplotypes():
 if __name__ == '__main__':
     s = Statistics()
     list = getHaplotypes()
+    #print(list)
     #s.diversityLevel(list)
     s.printHaplotypes(list, 1)
     #s.createEntropyTable()
@@ -488,7 +608,7 @@ if __name__ == '__main__':
     #s.shortestLengtOfFilteredRead()
     #s.testEnd(list)
     #s.getMismatchDistributionOfReadTable(list)
-    #s.getMismatchDistributionOfClusteringTable(list, 0, 1)
-    #s.getMismatchDistribution2(list)
+    #s.getMismatchDistributionOfClusteringTable(list, 0, 0)
     #s.getStatistics(list, 3)
     #s.getMismatchDistribution(list)
+    #s.DependencyOfLengthOnCorrection(list)
