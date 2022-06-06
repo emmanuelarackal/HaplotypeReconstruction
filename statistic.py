@@ -261,7 +261,6 @@ class Statistics:
         print("Calculating statistics")
         for i in range(0, 100):
             array.append([0, 0, 0, 0, 0])
-        list = []
         if mode == 1:
             for i in range(0, len(self.readTable)):
                 if 790 <= self.readTable[i].startPos and self.readTable[i].startPos + len(
@@ -271,13 +270,8 @@ class Statistics:
                         distance[t] = self.similarity(self.readTable[i], haplotypes[t], self.readTable[i].read)
                     minValue, index = self.leastValue(distance)
                     if minValue < 100:
-                        array[minValue][index] += 1
-                    if minValue == 0 and index == 3:
-                        list.append(i)
-            print(list)
+                        array[minValue][index] += self.clusteringTable[i].count
         elif mode == 2:
-            count = 0
-            zeroCount = 0
             for i in range(0, len(self.entropyTable)):
                 if 790 <= self.entropyTable[i].startPos and self.entropyTable[i].startPos + len(
                         self.entropyTable[i].read) <= 5096:
@@ -286,7 +280,7 @@ class Statistics:
                         distance[t] = self.similarity(self.entropyTable[i], haplotypes[t], self.entropyTable[i].read)
                     minValue, index = self.leastValue(distance)
                     if minValue < 100:
-                        array[minValue][index] += 1
+                        array[minValue][index] += self.clusteringTable[i].count
         else:
             count = 0
             for i in range(0, len(self.clusteringTable)):
