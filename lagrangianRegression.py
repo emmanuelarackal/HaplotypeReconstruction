@@ -158,6 +158,7 @@ class LagrangianRegression:
 
     """
     returns max myu according to the rules mentioned in paper
+    @h vector of whom the max myu is returned
     """
     def getMaxMyu(self, gradient, h):
         maxValue = -10000
@@ -261,6 +262,8 @@ class LagrangianRegression:
     """
     The pipe is used during read graph generation to reduce local
     haplotypes
+    @border1 start position of haplotype/region
+    @border2 end position of haplotype/region
     """
     def pipe(self, border1, border2):
         self.calculateY()
