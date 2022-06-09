@@ -231,6 +231,8 @@ class StagewiseRegression:
     """
     The pipe is used during read graph generation to reduce local
     haplotypes
+    @border1 start position of haplotype/region
+    @border2 end position of haplotype/region
     """
     def pipe(self, border1, border2):
         self.calculateP(border1, border2)
