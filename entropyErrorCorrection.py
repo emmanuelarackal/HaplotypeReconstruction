@@ -1,14 +1,24 @@
 import math
-
+import numpy as np
 import statistic
 from helperClasses import Read
 
 class EntropyErrorCorrection:
 
+    """
+    This class serves to correct reads with Shannon Entropy. We calculate for each position the entropy of the
+    nucleotides A, C, G, T and -. If a position has a lower entropy than a certain threshold, then it is corrected
+    in all overlapping reads using majority rule. Afterwards, the reads are stored in the file EntropyFile.txt
+    """
     def __init__(self):
         self.readTable = []
         self.referenceGenome = ""
+        self.checkCorrection = np.zeros(0)
 
+    """
+    Reads from 5V_allPairs.txt the raw reads with given format
+    and merges duplicates.
+    """
     def createReadTable(self):
         # Read all reads and store them into rawTable
         file = open('Documents\\5V_allPairs.txt', 'r')
@@ -34,7 +44,7 @@ class EntropyErrorCorrection:
         for read in rawTable:
             if read.startPos == currentPos:
                 duplicate = False
-                for i in range(readTablePos - sameStartPos, readTablePos):
+                for i in range(readTablePos - sameStartPos, readTablePos-1):
                     if self.readTable[i].read == read.read:
                         self.readTable[i].count += 1
                         duplicate = True
@@ -50,14 +60,25 @@ class EntropyErrorCorrection:
                 read.id = readTablePos
                 self.readTable.append(read)
                 readTablePos = readTablePos + 1
-        print(len(self.readTable))
+        # In checkCorrection, we store which reads were corrected in this step.
+        # The corrected reads will be excluded in the computation of the scores.
+        self.checkCorrection = np.full(len(self.readTable), False)
 
+    """
+    Reads and stores the reference genome from given file
+    """
     def createReferenceGenome(self):
         # Read reference genome
         file = open('Documents\\5V_ref_seq.fasta', 'r')
         lines = file.readlines()
         self.referenceGenome = lines[1]
 
+    """
+    This method computed the hamming distance between a read and a haplotype
+    without counting a dot as a mistake
+    @read read object
+    @haplotype haplotype sequence
+    """
     def similarity(self, read, haplotype):
         if read.startPos > len(haplotype):
             return None
@@ -71,6 +92,9 @@ class EntropyErrorCorrection:
                 break
         return distance
 
+    """
+    This method applies the error correction using Shannon entropy
+    """
     def entropyCorrection(self):
         self.createReadTable()
         self.createReferenceGenome()
@@ -85,6 +109,8 @@ class EntropyErrorCorrection:
             dot.append(0)
             coverage.append(0)
 
+        # Compute the statistics, how many times a nucleotide in {A, C, G, T, -} appears
+        # at each position
         for i in range(0, len(self.readTable)):
             read = self.readTable[i]
             for k in range(0, len(read.read)):
@@ -106,6 +132,8 @@ class EntropyErrorCorrection:
                 else:
                     dot[read.startPos + k - 1] += read.count
 
+        # compute the entropy at each position with the frequencies which
+        # were calculated above
         entropy = []
         for i in range(0, len(list)):
             probA = 0
@@ -134,32 +162,38 @@ class EntropyErrorCorrection:
                 eT = probT * math.log2(probT)
             if probS != 0:
                 eS = probS * math.log2(probS)
-            entropy.append(-(eA + eC + eG + eT + eS) / 5)
+            # normalize entropy
+            entropy.append(-(eA + eC + eG + eT + eS) / 2.32192809)
 
         truePos = []
         nucleotides = ["A", "C", "G", "T", "-"]
+        # Decide using a threshold, which position is a non-variant call position.
+        # Store for them the nucleotide which appeared the most
         for i in range(0, len(self.referenceGenome)):
-            if entropy[i] < 0.016:
+            # If normalized with 5, use 0.016 as threshold
+            if entropy[i] < 0.03445:
                 index = self.highestValue(list[i])
                 truePos.append(nucleotides[index])
             else:
                 truePos.append("")
 
+        # Correct reads with the majority rule resp the above stored nucleotides
         for i in range(0, len(self.readTable)):
             for k in range(0, len(self.readTable[i].read)):
-                if self.readTable[i].read[k] != "." and entropy[k + self.readTable[i].startPos - 1] < 0.016:
-                    self.readTable[i].read = self.readTable[i].read[:k] + truePos[k + self.readTable[i].startPos - 1] + \
-                                             self.readTable[i].read[k + 1:]
+                if self.readTable[i].read[k] != "." and entropy[k + self.readTable[i].startPos - 1] < 0.03445:
+                    if self.readTable[i].read[k] != truePos[k + self.readTable[i].startPos - 1]:
+                        self.readTable[i].read = self.readTable[i].read[:k] + truePos[k + self.readTable[i].startPos - 1] + \
+                                                 self.readTable[i].read[k + 1:]
+                        self.checkCorrection[i] = True
 
+        # Store the position which have variant call
         filteredList = []
         for i in range(0, len(entropy)):
-            if entropy[i] >= 0.016:
+            if entropy[i] >= 0.03445:
                 filteredList.append(i)
 
-
+        # Store reads in EntropyFile.txt
         file = open('Documents/EntropyFile.txt', 'w')
-
-        # TODO: merge
         for i in range(0, len(self.readTable)):
             filteredRead = ""
             for k in range(0, len(filteredList)):
@@ -168,6 +202,7 @@ class EntropyErrorCorrection:
             file.write(str(self.readTable[i].startPos) + " " + str(self.readTable[i].count) + " " + self.readTable[i].read + " " + filteredRead + "\n")
         file.close()
 
+        # Store variant call positions in filteredPositions.txt
         file = open('Documents\\filteredPositions.txt', 'w')
         filteredPositions = ""
         for i in range(0, len(filteredList)):
@@ -178,9 +213,16 @@ class EntropyErrorCorrection:
         file.write(filteredPositions)
         file.close()
         print("Number of filtered Positions = ", len(self.referenceGenome) - len(filteredList))
+
+        # Store which reads were corrected in this step in checkCorrection.npy
+        np.save('Documents\\checkCorrection.npy', self.checkCorrection)
         return entropy, list, dot
 
-
+    """
+    This method returns the index at which the highest value is located
+    in the list
+    @list list containing values
+    """
     def highestValue(self, list):
         maxValue = list[0]
         index = 0
@@ -192,6 +234,11 @@ class EntropyErrorCorrection:
                 index = i
         return index
 
+    """
+    This method returns the index at which the lowest value is located
+    in the list
+    @list list containing values
+    """
     def leastValue(self, list):
         minValue = list[0]
         index = 0
@@ -206,6 +253,13 @@ class EntropyErrorCorrection:
         else:
             return index, False
 
+    """
+    This method was used to locate positions at which the sequencing machine made 
+    non-uniform errors.
+    @entropy a list containing the entropy values of the positions
+    @list a list containing how many reads overlapped a position
+    @dot a list contatining number of detected dots at each position
+    """
     def test(self, entropy, list, dot):
         haplotypes = statistic.getHaplotypes()
 
@@ -268,9 +322,7 @@ class EntropyErrorCorrection:
                     var += nucleotides[k]
             suggestedVariants.append(var)
 
-        for i in range(7397, 7432):
-            #if entropy[i] < 0.016 and len(variantList[i]) > 1:
-            #if len(variantList[i]) > len(suggestedVariants[i]):
+        for i in range(1, 9300):
             hapCount = [0, 0, 0, 0, 0]
             table = [0, 0, 0, 0, 0]
             dots = [0, 0, 0, 0, 0]
