@@ -3,7 +3,6 @@ import random
 import distance
 import scipy.special
 import os
-#from scipy.spatial.distance import hamming
 from collections import Counter
 
 from helperClasses import Read
