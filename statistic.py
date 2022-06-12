@@ -101,14 +101,17 @@ class Statistics:
             self.filteredPosition.append(int(numbers[i]))
 
     """
-    Examines what the length of the shortest read is
+    Examines what the length of the shortest and largest read
     """
     def shortestLengtOfFilteredRead(self):
         length = 10000
-        for i in range(0, len(self.entropyTable)):
-            if len(self.entropyTable[i].filteredRead) < length:
-                length = len(self.entropyTable[i].filteredRead)
-        print(length)
+        maxLength = 0
+        for i in range(0, len(self.clusteringTable)):
+            if len(self.clusteringTable[i].read) < length:
+                length = len(self.clusteringTable[i].read)
+            if len(self.clusteringTable[i].read) > maxLength:
+                maxLength = len(self.clusteringTable[i].read)
+        print(length, maxLength)
 
     """
     This class can compute the clusteringTable. The clusteringTable contains sequences of the
