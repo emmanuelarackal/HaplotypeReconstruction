@@ -6,7 +6,7 @@ import os
 class StagewiseRegression:
 
     """
-    This class is used to solve the regression by using the generalized monotone 
+    This class is used to solve the regression by using the generalized monotone
     incremental forward stagewise regression concept of Hastie et al.
     """
 
@@ -31,17 +31,18 @@ class StagewiseRegression:
     This method computed the matrix P
     @border1 start position of haplotype/region
     @border2 end position of haplotype/region
+    @haploFolder folder where p.npy needs to be stored.
     """
-    def calculateP(self, border1, border2):
+    def calculateP(self, border1, border2, haploFolder):
         self.p = np.zeros((len(self.nlist), len(self.dbg.haplotypes)))
 
         for i in range(0, len(self.nlist)):
             for j in range(0, len(self.dbg.haplotypes)):
-                # If haplotype j and read i match, store the value 1 
+                # If haplotype j and read i match, store the value 1
                 # in the matrix P
                 if self.similarity(self.nlist[i], j, border1, border2):
                     self.p[i, j] = 1
-        np.save('Haplotypes\\p.npy', self.p)
+        np.save(haploFolder+'\\p.npy', self.p)
         return
 
     """
@@ -89,9 +90,11 @@ class StagewiseRegression:
         return res.dot(res)
 
     """
-    This method computes the y vector
+    This method computes the y vector    
+    @haploFolder folder where p.npy needs to be stored.
+    @folder folder where documents are stored
     """
-    def calculateY(self):
+    def calculateY(self, haploFolder, folder):
         self.y = np.zeros(len(self.nlist))
 
         # Create the partition lists
@@ -149,7 +152,7 @@ class StagewiseRegression:
                 pos += 1
 
         i = 0
-        # if there are situations in which a read in y doesn't match to any 
+        # if there are situations in which a read in y doesn't match to any
         # haplotype remove them. The corresponding algorithm for y is already
         # included in the calculation of y.
         while i < len(self.p):
@@ -158,13 +161,13 @@ class StagewiseRegression:
                 del self.nlist[i]
             else:
                 i = i + 1
-        np.save('Haplotypes\\y.npy', self.y)
-        np.save('Haplotypes\\p.npy', self.p)
+        np.save(haploFolder+'\\y.npy', self.y)
+        np.save(haploFolder+'\\p.npy', self.p)
 
         # stores the positions of the reads in pairedEndReadList
         # which were actually used in optimization in nList.txt.
         # This is relevant for the extension.
-        file = open('Haplotypes\\nList.txt', 'w')
+        file = open(folder+'\\nList.txt', 'w')
         nText = ""
         for i in range(0, len(self.nlist)):
             if i == len(self.nlist) - 1:
@@ -190,8 +193,9 @@ class StagewiseRegression:
 
     """
     generalized monotone incremental forward stagewise regression concept
+    @haploFolder
     """
-    def calculateH(self):
+    def calculateH(self, haploFolder):
         eps = 0.00001
         if np.count_nonzero(self.h) == 0:
             self.h = np.zeros(len(self.dbg.haplotypes))
@@ -200,8 +204,8 @@ class StagewiseRegression:
         constraint = 0
 
         if np.all((self.p == 0)) and np.all((self.y == 0)):
-            self.p = np.load('Haplotypes\\p.npy')
-            self.y = np.load('Haplotypes\\y.npy')
+            self.p = np.load(haploFolder+'\\p.npy')
+            self.y = np.load(haploFolder+'\\y.npy')
 
         # helper matrix m to compute the derivative of the penalty
         # in faster way
@@ -231,15 +235,17 @@ class StagewiseRegression:
     """
     The pipe is used during read graph generation to reduce local
     haplotypes
-    @border1 start position of haplotype/region
-    @border2 end position of haplotype/region
+    @border1 start position of region
+    @border2 end position of region
+    @haploFolder folder where the files about haplotypes needs to be stored resp are stored
+    @folder folder where the documents are stored
+    
     """
-    def pipe(self, border1, border2):
-        self.calculateP(border1, border2)
+    def pipe(self, border1, border2, haploFolder, folder):
+        self.calculateP(border1, border2, haploFolder)
         print("Calculated P")
-        self.calculateY()
+        self.calculateY(haploFolder, folder)
         print("Calculated y")
-        self.calculateH()
         if border1 < 100:
             string1 = "0" + str(border1)
         else:
@@ -248,9 +254,12 @@ class StagewiseRegression:
             string2 = "0" + str(border2)
         else:
             string2 = str(border2)
-        if os.path.exists("Haplotypes\\LSR_"+string1+"_"+string2+".txt"):
-            os.remove("Haplotypes\\LSR_"+string1+"_"+string2+".txt")
-        file = open('Haplotypes\\LSR_' + string1 + '_' + string2 + '.txt', 'w')
+
+        if os.path.exists(haploFolder+"\\LSR_"+string1+"_"+string2+".txt"):
+            os.remove(haploFolder+"\\LSR_"+string1+"_"+string2+".txt")
+
+        self.calculateH(haploFolder)
+        file = open(haploFolder+'\\LSR_' + string1 + '_' + string2 + '.txt', 'w')
         count = 0
         for i in range(0, len(self.dbg.haplotypes)):
             if self.h[i] >= 0.001:
