@@ -1040,8 +1040,9 @@ class HaplotypeReconstruction_DBG:
     @roh current roh value
     @mode 0 if we want to create the read graph. 1 if we want to use regression
     @folder location where the necessary documents are stored
+    @haploFolder folder containing the information about haplotypes
     """
-    def getLocalHaplotypes(self, border1, border2, roh, mode, folder):
+    def getLocalHaplotypes(self, border1, border2, roh, mode, folder, haploFolder):
         nlist = []
         pos = 0
         t = []
@@ -1096,7 +1097,7 @@ class HaplotypeReconstruction_DBG:
                     pos += 1
                 # Call regression
                 regression = StagewiseRegression(self, pairedList, roh)
-                numOfHaplo = regression.pipe(border1, border2)
+                numOfHaplo = regression.pipe(border1, border2, haploFolder, folder)
         # return number of local/global haplotypes after 1. generating read graph or after 2.
         # reducing the number of local haplotypes
         return numOfHaplo
@@ -1131,7 +1132,7 @@ class HaplotypeReconstruction_DBG:
                 line = line.replace("\n", "")
                 # Store haplotypes here.
                 self.haplotypes.append(line)
-        return self.getLocalHaplotypes(border1, border2, roh, 1, folder)
+        return self.getLocalHaplotypes(border1, border2, roh, 1, folder, haploFolder)
 
     """
     This method returns for any position the closest position in compact form
@@ -1216,7 +1217,7 @@ def pipe():
         # pop pending region interval
         border1, border2 = intervals.pop(0)
         # generate read graph
-        numOfHaplo = dbg.getLocalHaplotypes(border1, border2, 0, 0, folder)
+        numOfHaplo = dbg.getLocalHaplotypes(border1, border2, 0, 0, folder, haplotypeFolder)
         # if number of generated haplotypes is too large, split region into subregions
         if numOfHaplo > 1000:
             midBorder = int((border1 + border2) / 2)
