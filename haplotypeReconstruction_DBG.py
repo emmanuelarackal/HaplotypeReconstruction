@@ -1097,7 +1097,7 @@ class HaplotypeReconstruction_DBG:
                     pos += 1
                 # Call regression
                 regression = StagewiseRegression(self, pairedList, roh)
-                numOfHaplo = regression.pipe(border1, border2, haploFolder, folder)
+                numOfHaplo = regression.pipe(border1, border2, haploFolder)
         # return number of local/global haplotypes after 1. generating read graph or after 2.
         # reducing the number of local haplotypes
         return numOfHaplo
