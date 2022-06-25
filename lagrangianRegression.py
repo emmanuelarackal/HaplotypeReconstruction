@@ -33,14 +33,15 @@ class LagrangianRegression:
     This method computed the matrix P
     @border1 start position of haplotype/region
     @border2 end position of haplotype/region
+    @haploFolder folder where the files about haplotypes needs to be stored resp are stored
     """
-    def calculateP(self, border1, border2):
+    def calculateP(self, border1, border2, haploFolder):
         self.p = np.zeros((len(self.nlist), len(self.dbg.haplotypes)))
         for i in range(0, len(self.nlist)):
             for j in range(0, len(self.dbg.haplotypes)):
                 if self.similarity(self.nlist[i], j, border1, border2):
                     self.p[i, j] = 1
-        np.save('Haplotypes\\p.npy', self.p)
+        np.save(haploFolder+'\\p.npy', self.p)
         return
 
     """
@@ -70,8 +71,9 @@ class LagrangianRegression:
 
     """
     This method computes the y vector
+    @haploFolder folder where the files about haplotypes needs to be stored resp are stored
     """
-    def calculateY(self):
+    def calculateY(self, haploFolder):
         self.y = np.zeros(len(self.nlist))
 
         # Create the partition lists
@@ -116,13 +118,13 @@ class LagrangianRegression:
                 self.p = np.delete(self.p, i, 0)
             else:
                 i = i + 1
-        np.save('Haplotypes\\y.npy', self.y)
-        np.save('Haplotypes\\p.npy', self.p)
-        
+        np.save(haploFolder+'\\y.npy', self.y)
+        np.save(haploFolder+'\\p.npy', self.p)
+
         # stores the positions of the reads in pairedEndReadList
         # which were actually used in optimization in nList.txt.
         # This is relevant for the extension.
-        file = open('Haplotypes\\nList.txt', 'w')
+        file = open(haploFolder+'\\nList.txt', 'w')
         nText = ""
         for i in range(0, len(self.nlist)):
             if i == len(self.nlist) - 1:
@@ -158,7 +160,6 @@ class LagrangianRegression:
 
     """
     returns max myu according to the rules mentioned in paper
-    @h vector of whom the max myu is returned
     """
     def getMaxMyu(self, gradient, h):
         maxValue = -10000
@@ -195,8 +196,9 @@ class LagrangianRegression:
 
     """
     computes fit vector h
+    @haploFolder folder where the files about haplotypes needs to be stored resp are stored
     """
-    def calculateH(self):
+    def calculateH(self, haploFolder):
         if np.count_nonzero(self.h) == 0:
             self.h = np.zeros(len(self.dbg.haplotypes))
             # random initialization of h
@@ -205,8 +207,8 @@ class LagrangianRegression:
             self.h = self.h / sum(self.h)
 
         if np.all((self.p == 0)) and np.all((self.y == 0)):
-            self.p = np.load('Haplotypes\\p.npy')
-            self.y = np.load('Haplotypes\\y.npy')
+            self.p = np.load(haploFolder+'\\p.npy')
+            self.y = np.load(haploFolder+'\\y.npy')
 
         gradient = self.calculateGradient()
         maxMyu = self.getMaxMyu(gradient, self.h)
@@ -262,15 +264,14 @@ class LagrangianRegression:
     """
     The pipe is used during read graph generation to reduce local
     haplotypes
-    @border1 start position of haplotype/region
-    @border2 end position of haplotype/region
+    @haploFolder folder where the files about haplotypes needs to be stored resp are stored
     """
-    def pipe(self, border1, border2):
-        self.calculateY()
-        print("Calculated y")
-        self.calculateP(border1, border2)
+    def pipe(self, border1, border2, haploFolder):
+        self.calculateP(border1, border2, haploFolder)
         print("Calculated P")
-        self.calculateH()
+        self.calculateY(haploFolder)
+        print("Calculated y")
+        self.calculateH(haploFolder)
         if border1 < 100:
             string1 = "0" + str(border1)
         else:
@@ -279,9 +280,9 @@ class LagrangianRegression:
             string2 = "0" + str(border2)
         else:
             string2 = str(border2)
-        if os.path.exists("Haplotypes\\LSR_" + string1 + "_" + string2 + ".txt"):
-            os.remove("Haplotypes\\LSR_'+border1+'_'+border2+'.txt")
-        file = open('Haplotypes\\LSR_' + string1 + '_' + string2 + '.txt', 'w')
+        if os.path.exists(haploFolder+"\\LSR_" + string1 + "_" + string2 + ".txt"):
+            os.remove(haploFolder+"\\LSR_"+border1+'_'+border2+".txt")
+        file = open(haploFolder+'\\LSR_' + string1 + '_' + string2 + '.txt', 'w')
         count = 0
         for i in range(0, len(self.dbg.haplotypes)):
             if self.h[i] > 0.001:
