@@ -50,16 +50,17 @@ class HaplotypeReconstruction_DBG:
     """
     This method was used to generate the clusteringTable for Experiments. 
     The individual mentioned files were generated using ART.
+    @folder Location where the files are
     """
-    def createClusteringTableFromSamFile(self):
+    def createClusteringTableFromSamFile(self, folder):
         for i in range(0, 3):
             # The simulated files should be stored in these files
             if i == 0:
-                file = open('Experiment3\\paired_dat_errFree1.sam', 'r')
+                file = open(folder+'\\paired_dat_errFree1.sam', 'r')
             elif i == 1:
-                file = open('Experiment3\\paired_dat_errFree2.sam', 'r')
+                file = open(folder+'\\paired_dat_errFree1.sam', 'r')
             else:
-                file = open('Experiment3\\paired_dat_errFree3.sam', 'r')
+                file = open(folder+'\\paired_dat_errFree1.sam', 'r')
             lines = file.readlines()
             file.close()
             count = 0
@@ -1107,8 +1108,9 @@ class HaplotypeReconstruction_DBG:
     @border2 end position of local haplotype
     @roh current roh value
     @folder location where the necessary documents are stored
+    @haploFolder location where the file containing the haplotypes needs to be stored
     """
-    def reduceLocalHaplotypes(self, border1, border2, roh, folder):
+    def reduceLocalHaplotypes(self, border1, border2, roh, folder, haploFolder):
         self.haplotypes = []
         if border1 < 100:
             string1 = "0" + str(border1)
@@ -1120,7 +1122,7 @@ class HaplotypeReconstruction_DBG:
             string2 = str(border2)
         # Open the file containing the haplotypes which were already computed for
         # the given window
-        file = open('Experiment3\\LSR_' + string1 + '_' + string2 + '.txt', 'r')
+        file = open(haploFolder+'\\LSR_' + string1 + '_' + string2 + '.txt', 'r')
         lines = file.readlines()
         file.close()
         for line in lines:
@@ -1176,7 +1178,7 @@ def pipe():
         print("Applying Experiment")
         # For the experiments, the clustering tables are created using the sam
         # files produced by ART
-        dbg.createClusteringTableFromSamFile()
+        dbg.createClusteringTableFromSamFile(folder)
         dbg.calculateFilteredPosition(folder, 0, 4306)
     # generate datastructrures variantPositions, readList, nucleotides
     dbg.createVariantPos(folder)
@@ -1270,7 +1272,7 @@ def pipe():
         print("roh ", roh)
         numOfGlobalHaplo = 0
         for i in range(0, len(acceptedIntervals)):
-            numOfHaplo = dbg.reduceLocalHaplotypes(acceptedIntervals[i][0], acceptedIntervals[i][1], roh, folder)
+            numOfHaplo = dbg.reduceLocalHaplotypes(acceptedIntervals[i][0], acceptedIntervals[i][1], roh, folder, haplotypeFolder)
             if numOfGlobalHaplo == 0:
                 numOfGlobalHaplo = numOfHaplo
             else:
