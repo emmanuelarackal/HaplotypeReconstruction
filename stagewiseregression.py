@@ -92,9 +92,8 @@ class StagewiseRegression:
     """
     This method computes the y vector    
     @haploFolder folder where p.npy needs to be stored.
-    @folder folder where documents are stored
     """
-    def calculateY(self, haploFolder, folder):
+    def calculateY(self, haploFolder):
         self.y = np.zeros(len(self.nlist))
 
         # Create the partition lists
@@ -167,7 +166,7 @@ class StagewiseRegression:
         # stores the positions of the reads in pairedEndReadList
         # which were actually used in optimization in nList.txt.
         # This is relevant for the extension.
-        file = open(folder+'\\nList.txt', 'w')
+        file = open(haploFolder+'\\nList.txt', 'w')
         nText = ""
         for i in range(0, len(self.nlist)):
             if i == len(self.nlist) - 1:
@@ -237,14 +236,12 @@ class StagewiseRegression:
     haplotypes
     @border1 start position of region
     @border2 end position of region
-    @haploFolder folder where the files about haplotypes needs to be stored resp are stored
-    @folder folder where the documents are stored
-    
+    @haploFolder folder where the files about haplotypes needs to be stored resp are stored   
     """
-    def pipe(self, border1, border2, haploFolder, folder):
+    def pipe(self, border1, border2, haploFolder):
         self.calculateP(border1, border2, haploFolder)
         print("Calculated P")
-        self.calculateY(haploFolder, folder)
+        self.calculateY(haploFolder)
         print("Calculated y")
         if border1 < 100:
             string1 = "0" + str(border1)
