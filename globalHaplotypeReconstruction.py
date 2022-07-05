@@ -131,8 +131,8 @@ class GlobalHaplotypeReconstruction:
             elements = line.split(" ")
             solutions.append([elements[1], float(elements[0])])
         dbg = HaplotypeReconstruction_DBG()
-        dbg.getFilteredReadTable(gFolder)
-        dbg.createVariantPos(gFolder)
+        dbg.getFilteredReadTable(folder)
+        dbg.createVariantPos(folder)
         # We need to use the raw reads. The information about them are stored
         # in tracker.txt
         file = open(folder + '\\tracker.txt')
