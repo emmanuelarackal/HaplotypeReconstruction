@@ -193,7 +193,7 @@ class EntropyErrorCorrection:
                 filteredList.append(i)
 
         # Store reads in EntropyFile.txt
-        file = open('Documents/EntropyFile.txt', 'w')
+        file = open('Documents\\EntropyFile.txt', 'w')
         for i in range(0, len(self.readTable)):
             filteredRead = ""
             for k in range(0, len(filteredList)):
