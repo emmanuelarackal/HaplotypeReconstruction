@@ -1,7 +1,8 @@
 # Introduction to implementation
 
 This file serves to briefly explain which concepts can be called up 
-and how. It also explains what the output files stand for.
+and how. It also explains what the output files stand for. The 
+implementation was a part of my bachelor thesis.
 
 ## Pipeline
 
