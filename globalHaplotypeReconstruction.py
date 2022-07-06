@@ -224,7 +224,7 @@ class GlobalHaplotypeReconstruction:
     @gFolder folder where the global/local haplotype files are stored
     """
 
-    def consistencyCheckWithRawData(self, folder, gFolder, border1, border2):
+    def consistencyCheck(self, folder, gFolder, border1, border2):
         dbg = HaplotypeReconstruction_DBG()
         dbg.getFilteredReadTable(folder)
         dbg.getPairedEndReadList(folder)
@@ -477,7 +477,7 @@ def pipe():
         gbr.calculateBestFit(gFolder, fFolder, sFolder)
     else:
         # With consistency check. Apply it, compute the fits and apply scoring system
-        gbr.consistencyCheckWithRawData(folder, gFolder, border1, border2)
+        gbr.consistencyCheck(folder, gFolder, border1, border2)
         regressionPipe(border1, border2, gbr, folder, gFolder, fFolder)
         gbr.calculateBestFit(gFolder, fFolder, sFolder)
         gbr.defineScore(border1, border2, folder, gFolder, sFolder)
