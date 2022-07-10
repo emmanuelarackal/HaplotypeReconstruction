@@ -1,14 +1,13 @@
 # Introduction to implementation
 
 This file serves to briefly explain which concepts can be called up 
-and how. It also explains what the output files stand for. The 
-implementation was a part of my bachelor thesis.
+and how. It also explains what the output files stand for.
 
 ## Pipeline
 
 ### Format of File containing reads
 
-The program input is especially modelled according to the file 
+The program input is modelled according to the file 
 5V_allPairs.txt, 5VirusMixReference.fasta and 5V_ref_seq.fasta. 
 These file names were hard coded in the implementation.  
 
@@ -31,7 +30,7 @@ entropyCorrection: applies the correction
 
 ### Correction using clustering approach
 
-In order to correct those positions which were not considered before, 
+To correct those positions which were not considered before, 
 the clustering concept was used. It requires the EntropyFile.txt from before. 
 To execute it, the main function of the clusteringErrorCorrection class can be 
 used. Using threads, it tries to parallelize the correction. For each window 
@@ -39,7 +38,7 @@ created, a file is saved in the Data folder. A file lists for a read to which
 haplotype it has been assigned the most. After all windows have been created, 
 the reads are corrected using the majority rule. They are then saved in the file 
 Documents\\ClusteringFile.txt. In our version, the correction was done 3 times: 
-with a window of length 500, 600 and 700. After the correction with the 500-windows, 
+with a window of lengths 500, 600 and 700. After the correction with the 500-windows, 
 the ClusteringFile.txt was manually renamed to EntropyFile.txt. The correction was 
 then repeated on the new EntropyFile with windows of length 600. The same was done 
 for the 700-windows. To change the window length, the variable windowLength must be 
@@ -63,7 +62,7 @@ the global haplotypes are constructed. To do this, the main function of the clas
 haplotypeReconstruction_DBG can be executed. It generates and uses several important 
 data structures. The reads from the ClusteringFile are stored in the clusteringTable. 
 Since new non-variant call positions may be corrected during error correction, the 
-relevant positions must be recalculated. They are stored in variantPositions and in 
+relevant positions must be recalculated. They are stored in variantPositions and  
 the file Documents\\variantPositions.txt. The reads are then transformed into the compact 
 form and stored in the file Documents\\PairedEndReadList.txt. The split reads are saved 
 in Documents\\ReadList.txt. In addition, we also calculate the compact form of the raw 
@@ -75,7 +74,7 @@ for the scoring system.
 After these data structures have been generated, the algorithm for generating 
 the global haplotypes is executed. When generating a read graph, the positions where branches 
 exist are noted in parallel. All these positions are stored in the file Documents\\checkPositions.txt. 
-They may be relevant for the consistency check and for the scoring system.  For each subregion, 
+They may be relevant for the consistency check and the scoring system.  For each subregion, 
 a file is created in the Haplotype folder. It contains all its local haplotypes. After the global 
 haplotypes have been calculated, they are stored in the file Haplotype\\GlobalHaplotypes.txt. 
 
@@ -94,11 +93,11 @@ deBruijnAlgorithm: computes for a given region its read graph.
 ### Optimization
 
 To find the optimal set of global haplotypes, the globalHaplotypeReconstruction class can 
-be used. It is important that the files mentioned above exist. To run the algorithm, the main 
+be used. The files mentioned above must exist. To run the algorithm, the main 
 function can be run. It is important to specify the border and thus the interval of the global 
-region in compact form in the method pipe(). The pipe calculates the different h#. A file is 
+region in the compact form in the method pipe(). The pipe calculates the different h#. A file is 
 created for each h# in the Frequencies folder. Then the optimal result is calculated and saved 
-in Solutions\\Solution.txt. In mode 1 (can be defined in pipe) the consistency check method is 
+in Solutions\\Solution.txt. In mode 1 (which can be defined in pipe) the consistency check method is 
 run first to reduce the number of global haplotypes. The class also includes the implementation 
 of the scoring system. To do this you need the solution file.
 
